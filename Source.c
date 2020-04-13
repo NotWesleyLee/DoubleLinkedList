@@ -2,136 +2,96 @@
 #include<string.h>
 #include<stdlib.h>
 #include<stdbool.h>
+#include"dlist.h"
+#include"slist.h"
+#include"utils.h"
+#include<assert.h>
 
-typedef struct node node;
-struct node {
-	int data;
-	node* next;
-};
-
-node* node_create(int data, node* next) {
-	node* p = (node*)malloc(sizeof(node));
-	p->data = data;
-	p->next = next;
-	return p;
+//-------------------------------------------------
+static void slist_check_frontback(slist* list, int front, int back) {
+    printf("assert front of list is: %d\n", front);
+    assert(slist_front(list) == front);
+    printf("assert back of list is: %d\n", back);
+    assert(slist_back(list) == back);
 }
 
-typedef struct slist slist;
-struct slist {
-	node* head;
-	node* tail;
-	size_t size;
-};
+//-------------------------------------------------
+static void slist_test_once(slist* list, int start, int end, int step, void (*fp)(slist*, int)) {
+    for (int i = start; i < end; i += step) {
+        fp(list, i);
+    }
+    slist_print(list, "list is created and is...");
+    printf("list size is: %zu\n", slist_size(list));
+    printf("list is empty? %s\n\n", yesorno(slist_empty(list)));
 
-slist* slist_create(void)
-{
-	slist*p = (slist*)malloc(sizeof(slist));
-	p->head = NULL;
-	p->tail = NULL;
-	p->size = 0;
+    int firstadded = start;
+    int lastadded = start;
+    while (lastadded + step < end) {
+        lastadded += step;
+    }
+    if (fp == slist_pushback) { slist_check_frontback(list, firstadded, lastadded); }
+    if (fp == slist_pushfront) { slist_check_frontback(list, lastadded, firstadded); }
 
-	return p;
+    slist_clear(list);
+    printf("after clearing the list, is the list is now empty? %s\n\n", yesorno(slist_empty(list)));
 }
 
-bool slist_empty(slist* list);
-
-void checkempty(slist* list) {
-	if (slist_empty(list)) {
-		fprintf(stderr, "list is empty\n");
-		exit(1);
-	}
-}
-
-void slist_addfront_node(slist*list, node* no)
-{
-	no->next = list->head;
-	list->head = no;
-	if (list->size == 0) { list->tail = no; }
-	++list->size;
-}
-
-void slist_addfront(slist* list, int data)
-{
-	slist_addfront_node(list, node_create(data, list->head));
-}
-
-void slist_addback_node(slist* list, node* no)
-{
-	if (list->size == 0) { slist_addfront_node(list, no); return; }
-
-	no->next = NULL;
-	list->tail->next = no;
-	list->tail = no;
-	++list->size;
-}
-
-void slist_addback(slist* list, int data)
-{
-	slist_addback_node(list, node_create(data, NULL));
-}
-
-void slist_popfront(slist* list) {
-	if (slist_empty(list)) { fprintf(stderr, "underflow error\n"); exit(1); }
-	node* p = list->head;
-	list->head = list->head->next;
-	free(p);
-
-}
-
-void slist_popback(slist* list) {
-	if (slist_empty(list)) { fprintf(stderr, "underflow error\n"); exit(1); }
-	
-	node* p = list->head;
-	while (p->next != list->tail) { p = p->next; }
-	p->next = NULL;
-	free(list->tail);
-	list->tail = p;
-}
-
-int slist_front(slist* list) {
-	checkempty(list);
-	return list->tail->data;
-}
-
-int slist_back(slist* list) {
-	checkempty(list);
-	return list->tail->data;
-}
-
-bool slist_empty(slist* list) {
-	return list->size == 0;
-}
-size_t slist_size(slist* list) { return list->size; }
-
-void slist_clear(slist* list) {
-	while (!slist_empty(list)) {
-		slist_popfront(list);
-	}
-}
-
-void slist_print(slist* list, const char*msg) {
-	printf("%s\n", msg);
-	node* p = list->head;
-	while (p != NULL) {
-		printf("%d --> %p\n", p->data, p->next);
-		p = p->next;
-	}
-}
-
+//-------------------------------------------------
 void slist_test() {
-	slist* list = slist_create();
-	int i;
-	for (i = 10; i < 50; i += 10) {
-		slist_addfront(list, i);
-	}
-	slist_print(list, "list is now: ");
-	slist_clear(list);
-	slist_print(list, "list is now: ");
+    printf("\n//===================== TESTING SLIST =========================\n\n");
+    slist* list = slist_create();
+    slist_test_once(list, 10, 50, 10, slist_pushfront);
+    slist_test_once(list, 10, 100, 20, slist_pushback);
+
+    printf("\n    All Assertions passed!...\n");
+    free(list);
+    printf("//===================== END TESTING SLIST =========================\n\n");
+}
+
+static void dlist_check_frontback(dlist* list, int front, int back) {
+    printf("assert front of list is: %d\n", front);
+    assert(dlist_front(list) == front);
+    printf("assert back of list is: %d\n", back);
+    assert(dlist_back(list) == back);
+}
+
+//-------------------------------------------------
+static void dlist_test_once(dlist* list, int start, int end, int step, void (*fp)(dlist*, int)) {
+    for (int i = start; i < end; i += step) {
+        fp(list, i);
+    }
+    dlist_print(list, "list is created and is...");
+    printf("list size is: %zu\n", dlist_size(list));
+    printf("list is empty? %s\n", yesorno(dlist_empty(list)));
+
+    int firstadded = start;
+    int lastadded = start;
+    while (lastadded + step < end) {
+        lastadded += step;
+    }
+    if (fp == dlist_pushback) { dlist_check_frontback(list, firstadded, lastadded); }
+    if (fp == dlist_pushfront) { dlist_check_frontback(list, lastadded, firstadded); }
+
+    dlist_clear(list);
+    printf("after clearing the list, is the list is now empty? %s\n\n", yesorno(dlist_empty(list)));
+}
+
+//-------------------------------------------------
+void dlist_test() {
+    printf("//===================== TESTING DLIST =========================\n\n");
+    dlist* list = dlist_create();
+    dlist_test_once(list, 10, 50, 10, dlist_pushfront);
+    dlist_test_once(list, 10, 100, 20, dlist_pushback);
+    dlist_test_once(list, 0, 100, 1, dlist_pushback);
+
+    printf("      All Assertions passed!...\n");
+    free(list);
+    printf("//===================== END TESTING DLIST =========================\n\n");
 }
 
 int main(int argc, const char* argv[]) {
 	slist_test();
-
+	dlist_test();
 
 	return 0;
 }
